@@ -29,7 +29,7 @@ const testConnection = async () => {
     try {
         const connection = await pool.getConnection();
         console.log('✅ Database connected successfully');
-        console.log(`📊 Database: ${process.env.DB_NAME} on ${process.env.DB_HOST}`);
+         
         connection.release();
         return true;
     } catch (error) {

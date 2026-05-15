@@ -21,32 +21,36 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration - Fix for Render + Localhost
+// CORS configuration - Fixed version
 const allowedOrigins = [
     'http://localhost:3000',
     process.env.CLIENT_URL
 ].filter(Boolean);
 
+// CORS middleware - Simplified version
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        // Allow all origins in development
+        if (process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
+        
+        // Check against allowed origins in production
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             console.log('Blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true, // Allow cookies to be sent
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['Authorization']
 }));
-
-// Handle preflight requests
-app.options('*', cors());
 
 // Other middleware
 app.use(express.json({ limit: '10mb' }));
@@ -59,7 +63,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
-    console.log('Origin:', req.headers.origin);
+    if (req.headers.origin) {
+        console.log('Origin:', req.headers.origin);
+    }
     next();
 });
 
@@ -76,22 +82,14 @@ app.get('/health', (req, res) => {
         status: 'OK',
         message: 'Server is running',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        uptime: process.uptime()
     });
 });
 
 // Root endpoint
 app.get('/', (req, res) => {
-    res.json({
-        message: 'Welcome to E-Commerce API',
-        version: '1.0.0',
-        documentation: '/api-docs',
-        endpoints: {
-            health: '/health',
-            api: '/api',
-            docs: '/api-docs'
-        }
-    });
+    res.send('✅ API is running');
 });
 
 // API routes
@@ -103,7 +101,7 @@ app.use('/api/products', productRoutes);
 app.use((req, res) => {
     res.status(404).json({
         success: false,
-        message: 'Route not found'
+        message: `Route ${req.originalUrl} not found`
     });
 });
 
@@ -122,7 +120,7 @@ const createDefaultAdmin = async () => {
             [process.env.ADMIN_EMAIL, hashedPassword]
         );
         
-        console.log('✅ Default admin user created');
+        console.log('✅ Default admin user created/verified');
     } catch (error) {
         console.error('Error creating admin:', error.message);
     }
@@ -130,34 +128,38 @@ const createDefaultAdmin = async () => {
 
 // Start server
 const startServer = async () => {
-    const dbConnected = await testConnection();
-    if (!dbConnected) {
-        console.error('❌ Cannot start server without database');
+    try {
+        const dbConnected = await testConnection();
+        if (!dbConnected) {
+            console.error('❌ Cannot start server without database');
+            process.exit(1);
+        }
+        
+        await createDefaultAdmin();
+        
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`\n🚀 Server running on port http://localhost:${PORT}`);
+            console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
+            console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`👤 Admin Email: ${process.env.ADMIN_EMAIL}`);
+            console.log(`🔑 Admin Password: ${process.env.ADMIN_PASSWORD}`);
+            console.log(`\n✅ Server is ready  \n`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
-    
-    await createDefaultAdmin();
-    
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on http://localhost:${PORT}`);
-        console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
-        console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
-        console.log(`👤 Admin Email: ${process.env.ADMIN_EMAIL}`);
-        console.log(`🔑 Admin Password: ${process.env.ADMIN_PASSWORD}`);
-    });
 };
 
 startServer();
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
+const gracefulShutdown = () => {
+    console.log('\nReceived shutdown signal, closing server...');
     process.exit(0);
-});
+};
 
-process.on('SIGINT', () => {
-    console.log('SIGINT signal received: closing HTTP server');
-    process.exit(0);
-});
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 export default app;
