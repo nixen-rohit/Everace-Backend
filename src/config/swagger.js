@@ -50,7 +50,7 @@ const options = {
                         lastName: { type: 'string' },
                         role: { type: 'string', enum: ['user', 'admin'] }
                     }
-                }
+                },
                 Product:{
                 type: 'object',
                 properties: {
