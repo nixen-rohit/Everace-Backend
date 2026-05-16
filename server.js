@@ -23,33 +23,39 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   "http://localhost:3000",
-  process.env.CLIENT_URL || "https://everacee-seven.vercel.app",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://localhost:5173",
+  "https://everacee-seven.vercel.app",
+  process.env.CLIENT_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin
-      // (Postman, mobile apps, curl)
+      // Allow requests with no origin (Postman, mobile apps, curl)
       if (!origin) {
         return callback(null, true);
       }
 
-      // Check allowed origins
-      if (allowedOrigins.includes(origin)) {
+      // Check allowed origins or dynamic localhost/staging subdomains
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:") ||
+        origin.endsWith(".vercel.app") ||
+        origin.endsWith(".onrender.com")
+      ) {
         return callback(null, true);
       }
 
       console.error(`❌ CORS blocked for origin: ${origin}`);
-
       return callback(new Error("Not allowed by CORS"));
     },
 
     credentials: true,
 
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 
     exposedHeaders: ["Authorization"],
   }),
