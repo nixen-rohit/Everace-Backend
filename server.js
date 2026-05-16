@@ -29,23 +29,24 @@ const allowedOrigins = [
 
 // CORS middleware - Simplified version
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+    // origin: function (origin, callback) {
+    //     // Allow requests with no origin (like mobile apps or curl requests)
+    //     if (!origin) return callback(null, true);
         
-        // Allow all origins in development
-        if (process.env.NODE_ENV !== 'production') {
-            return callback(null, true);
-        }
+    //     // Allow all origins in development
+    //     if (process.env.NODE_ENV !== 'production') {
+    //         return callback(null, true);
+    //     }
         
-        // Check against allowed origins in production
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            console.log('Blocked origin:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    //     // Check against allowed origins in production
+    //     if (allowedOrigins.indexOf(origin) !== -1) {
+    //         callback(null, true);
+    //     } else {
+    //         console.log('Blocked origin:', origin);
+    //         callback(new Error('Not allowed by CORS'));
+    //     }
+    // },
+    origin: ['http://localhost:3000', 'https://everacee-seven.vercel.app'] ,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
