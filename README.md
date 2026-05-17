@@ -88,4 +88,13 @@ NODE_ENV=development
 CLIENT_URL=http://localhost:3000(frontend url)
 
  
+#API Endpoints
 
+Authentication Routes (/api/auth)
+Method	Endpoint	Description	Access
+POST	/register	Register new user	Public
+POST	/login	Login user	Public
+POST	/logout	Logout user	Private
+POST	/refresh-token	Refresh access token	Public
+GET	/me	Get current user profile	Private
+PATCH	/change-password	Change user password	Private
